@@ -83,8 +83,8 @@ def sensor_read(arg1):
         global gyro_z
 
 
-        #take 10 readings per second
-        time.sleep(0.3)
+        #take a reading every 0.75 seconds
+        time.sleep(0.75)
 
         try:
 
@@ -142,6 +142,7 @@ def sensor_read(arg1):
 
 def sensor_write(arg1):
     while True:    
+        time.sleep(0.75)
         #convert radians to degrees
         rollDeg = math.radians(roll)
         pitchDeg = math.radians(pitch)
