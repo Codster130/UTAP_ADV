@@ -82,7 +82,6 @@ def sensor_read(arg1):
         global gyro_y
         global gyro_z
 
-
         #take a reading every 0.75 seconds
         time.sleep(0.75)
 
@@ -96,7 +95,6 @@ def sensor_read(arg1):
             mag_x, mag_y, mag_z = mag_accel_sensor.magnetometer
             accel_x, accel_y, accel_z = mag_accel_sensor.accelerometer
             gyro_x, gyro_y, gyro_z = gyro_sensor.gyroscope
-
 
             #mag calibration offsets for a SPECIFIC device - yours will be different!!
             #X: -46.20, Y:  -83.05, Z: -107.25
@@ -190,7 +188,6 @@ image = Image.new('1', (width, height))
 
 font = ImageFont.load_default()
 
-
 #### CONFIGURE THE RPI TO INTERFACE WITH CONTROL BOARD ####
 
 #Make it easier to remember which pins control which motors
@@ -200,7 +197,6 @@ BL1 = 13
 OR1 = 20
 BR1 = 27
 
-
 #Do the same for the corresponding PWM signals
 GR1_PWM = 3
 GR2_PWM = 4
@@ -208,13 +204,18 @@ BL1_PWM = 2
 OR1_PWM = 0
 BR1_PWM = 1
 
+######## OUR MOTOR PLACEMENTS ########
+#       GREEN 1 :   PLACED ON RIGHT FOR FORWARD/BACKWARD
+#       GREEN 2 :   PLACED ON FRONT AS UP/DOWN
+#       BLUE 1  :   PLACED ON LEFT AS FORWARD/BACKWARD
+#       ORANGE 1:   PLACED ON LEFT AS UP/DOWN
+#       BROWN 1 :   PLACED ON RIGHT AS UP/DOWN
 
 #Use the numbering scheme for the Broadcom chip, not the RPi pin numbers
 GPIO.setmode(GPIO.BCM)
 
 #Turn off warnings about pins being already configured
 GPIO.setwarnings(False)
-
 
 #Setup pins to control direction on the motor driver chip (MAXIM's MAX14870)
 GPIO.setup(GR1,GPIO.OUT)#Green 1
@@ -223,11 +224,9 @@ GPIO.setup(BL1,GPIO.OUT)#Blue 1
 GPIO.setup(OR1,GPIO.OUT)#Orange 1
 GPIO.setup(BR1,GPIO.OUT)#Brown 1
 
-
 #status LEDs
-GPIO.setup(6,GPIO.OUT)#
-GPIO.setup(16,GPIO.OUT)#
-
+GPIO.setup(6,GPIO.OUT)
+GPIO.setup(16,GPIO.OUT)
 
 # Based on code released by rdb under the Unlicense (unlicense.org)
 # Based on information from:
@@ -279,7 +278,6 @@ button_names = {
     0x13d : 'thumbl',
     0x13e : 'thumbr',
 }
-
 
 axis_map = []
 button_map = []
@@ -358,8 +356,6 @@ try:
             #if type & 0x80:
                 #print("(initial)",end=""),
 
-
-
             if type & 0x01:
                 button = button_map[number]
                 if button:
@@ -383,9 +379,7 @@ try:
                     
                     #if button == "b":
                         #t = False
-                        
-
-                        
+                                                
             if type & 0x02:
                 axis = axis_map[number]
                 #right joystick fwd/rev
@@ -432,10 +426,9 @@ try:
                     intValy2 = int(fvalue)*2+1
                     print("%d" % (intValy2))
                     
-
                 #There's a nice tutorial for single joysick control at http://home.kendra.com/mauser/Joystick.html
                 #if intValrx+intValry >= 0xFFFF:
-                    #t = threading.Thread(target=sensor_read,args=(1,), daemon=True).start()
+                    #t = threading.Thread(target=sensor_read,args=(1,), daemon=True).start() #testing what putting threading in our for loop does
                 
                 if intValy2<-100:
                     #green motor
@@ -510,7 +503,6 @@ try:
                 elif RightStickOpp < -0xFFFF:
                     RightStickOpp = 0xFFFF
                     
-
                 #green2 motor left up/down
                 if y2 > 0:
                     GPIO.output(GR2,GPIO.LOW)
@@ -557,7 +549,6 @@ try:
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
-                    
-                
+
 except (KeyboardInterrupt,SystemExit):
     GPIO.cleanup()
