@@ -101,9 +101,9 @@ def sensor_read(arg1):
             #X: -46.20, Y:  -83.05, Z: -107.25
             #X: -38.30, Y:  -67.60, Z: -100.35
 
-            mag_cal_x = -18.15
-            mag_cal_y = -66.1
-            mag_cal_z = -91.9
+            mag_cal_x = -5.4499999
+            mag_cal_y = -42.05
+            mag_cal_z = -29.3
 
             mag_x = mag_x-mag_cal_x
             mag_y = mag_y-mag_cal_y
