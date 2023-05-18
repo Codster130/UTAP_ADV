@@ -59,6 +59,7 @@ oled = adafruit_ssd1306.SSD1306_I2C(128,64, i2c_oled,addr=0x3c,reset=[])
 i2c_bme = board.I2C()
 bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c_bme,0x76)
 flag = 0
+aflag = 0
 
 def sensor_read(arg1):
     while True:
@@ -82,8 +83,8 @@ def sensor_read(arg1):
         global gyro_y
         global gyro_z
 
-        #take a reading every 0.75 seconds
-        time.sleep(0.75)
+        #take 10 readings per second
+        time.sleep(0.1)
 
         try:
 
@@ -135,51 +136,49 @@ def sensor_read(arg1):
 
         except:
 
-            #subprocess.call(['i2cdetect', '-y', '1'])
+            subprocess.call(['i2cdetect', '-y', '1'])
             continue
 
-def sensor_write(arg1):
-    while True:    
-        time.sleep(0.75)
         #convert radians to degrees
-        rollDeg = math.radians(roll)
-        pitchDeg = math.radians(pitch)
-        yawDeg = math.radians(yaw)
-        yawTilt = math.radians(tilt_yaw)
+        rollDeg = roll*57.2958
+        pitchDeg = pitch*57.2958
+        yawDeg = yaw*57.2958
+        yawTilt = tilt_yaw*57.2958
 
         #print("yawDeg: {}".format(yawDeg))
         #print("yawTilt: {}".format(yawTilt))
 
         #line (radius) in compass is 23 pixels (compass is 46 pixels wide)
         #offset by pi to orient the display so top is north
-        # xx = round(math.cos(yaw-math.pi/2)*23)
-        # yy = round(math.sin(yaw-math.pi/2)*23)
+        xx = round(math.cos(yaw-math.pi/2)*23)
+        yy = round(math.sin(yaw-math.pi/2)*23)
 
-        # image = Image.new("1",(128,64))
-        # draw = ImageDraw.Draw(image)
+        image = Image.new("1",(128,64))
+        draw = ImageDraw.Draw(image)
 
-        # font = ImageFont.load_default()
+        font = ImageFont.load_default()
 
-        # draw.ellipse((41,17,87,63),outline=255, fill=0)#left,top,right,bottom
+        draw.ellipse((41,17,87,63),outline=255, fill=0)#left,top,right,bottom
 
-        # draw.line((xx+64,yy+41,64,41),fill=255) #[left (beginning), top] head, [right (end), bottom] tail - tail is always at center
+        draw.line((xx+64,yy+41,64,41),fill=255) #[left (beginning), top] head, [right (end), bottom] tail - tail is always at center
 
-        # draw.text((0,-2),"Yaw: {}".format(round(yawDeg)),font=font,fill=255)
-        # draw.text((64,-2),"Pitch: {}".format(round(pitchDeg)),font=font,fill=255)
-        # draw.text((0,6),"Roll: {}".format(round(rollDeg)),font=font,fill=255)
+        draw.text((0,-2),"Yaw: {}".format(round(yawDeg)),font=font,fill=255)
+        draw.text((64,-2),"Pitch: {}".format(round(pitchDeg)),font=font,fill=255)
+        draw.text((0,6),"Roll: {}".format(round(rollDeg)),font=font,fill=255)
 
-        # #Display information from Temp, Heading, Pressure sensor - you may wish to do something based on this information
-        # draw.text((0,14),"T: {:0.1f}C".format((bme280.temperature)),font=font,fill=255)
-        # draw.text((0,22),"H: {}%".format(round(bme280.humidity)),font=font,fill=255)
-        # draw.text((64,6),"P: {}mbar".format(round(bme280.pressure)),font=font,fill=255)
+        #Display information from Temp, Heading, Pressure sensor - you may wish to do something based on this information
+        draw.text((0,14),"T: {:0.1f}C".format((bme280.temperature)),font=font,fill=255)
+        draw.text((0,22),"H: {}%".format(round(bme280.humidity)),font=font,fill=255)
+        draw.text((64,6),"P: {}mbar".format(round(bme280.pressure)),font=font,fill=255)
 
-        # #Update OLED screen to show new data and orientation (attitude) information
-        # oled.image(image)
-        # oled.show()
+        #Update OLED screen to show new data and orientation (attitude) information
+        oled.image(image)
+        oled.show()
+
 
 #Start the sensor read thread
-threading.Thread(target=sensor_read,args=(1,), daemon=True).start
-threading.Thread(target=sensor_write,args=(1,), daemon=True).start
+t = threading.Thread(target=sensor_read,args=(1,), daemon=True).start()
+#T = threading.Thread(target=sensor_write,args=(1,), daemon=True).start
 
 # Setup OLED screen - get parameters
 width = oled.width
@@ -343,7 +342,7 @@ try:
 
     # Main event loop
     while True:
-
+        start_time = time.time()
         # Joystick code based on release by rdb under the Unlicense (unlicense.org)
         # Based on information from:
         # https://www.kernel.org/doc/Documentation/input/joystick-api.txt
@@ -366,20 +365,24 @@ try:
                     else:
                         print("%s released" % (button))
 
-                    # if button == "b":
-                    #     aflag = 0
-
-                    #     GPIO.output(6,GPIO.HIGH)#turn on other LED
-
-                    # else:
-                    #     GPIO.output(6,GPIO.LOW)#otherwise turn it off - should turn off when any other button is pushed
-                        
-                    #if button == "x":
-                        #t = threading.Thread(target=sensor_read,args=(1,), daemon=True).start()
+                    if button == "y":
+                        flag = 1
                     
-                    #if button == "b":
-                        #t = False
-                                                
+                    elif button == "b":
+                        flag = 2
+
+                    elif button == "a":
+                        flag = 3
+
+                    elif button == "x":
+                        flag = 4
+
+                    elif button == "RB":
+                        flag = 0
+
+                    else:
+                        pass
+
             if type & 0x02:
                 axis = axis_map[number]
                 #right joystick fwd/rev
@@ -549,6 +552,14 @@ try:
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
+
+            if flag == 1:
+                GPIO.output(16,GPIO.HIGH)
+            elif flag == 0:
+                GPIO.output(16,GPIO.LOW)
+        end_time = time.time()        
+        print (flag)
+        print("loop time:",end_time - start_time)
 
 except (KeyboardInterrupt,SystemExit):
     GPIO.cleanup()
