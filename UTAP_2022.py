@@ -3,6 +3,7 @@ import time
 import math
 import board
 import busio
+
 #copied
 #We tried several IMU sensors - may go back to this one
 #import adafruit_lsm303dlh_mag
@@ -58,8 +59,6 @@ oled = adafruit_ssd1306.SSD1306_I2C(128,64, i2c_oled,addr=0x3c,reset=[])
 #I2C address for the temp, humidity and pressure sensor is 0x76
 i2c_bme = board.I2C()
 bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c_bme,0x76)
-flag = 0
-aflag = 0
 
 def sensor_read(arg1):
     while True:
@@ -70,6 +69,9 @@ def sensor_read(arg1):
         global tilt_yaw
         global pitch
         global roll
+        global yawDeg
+        global pitchDeg
+        global rollDeg
 
         global mag_x
         global mag_y
@@ -174,11 +176,6 @@ def sensor_read(arg1):
         #Update OLED screen to show new data and orientation (attitude) information
         oled.image(image)
         oled.show()
-
-
-#Start the sensor read thread
-t = threading.Thread(target=sensor_read,args=(1,), daemon=True).start()
-#T = threading.Thread(target=sensor_write,args=(1,), daemon=True).start
 
 # Setup OLED screen - get parameters
 width = oled.width
@@ -336,18 +333,101 @@ intValy = 0
 intValrx = 0
 intValry = 0
 
-#A TRY-CATCH in programming allows a program to fail gracefully if the "try" portion
-#cannot be executed
-try:
+i=0
+timer = [1,2,3,4,5,6,7,8,9,10]
+direction = 0
+for i in timer:
+        evbuf = jsdev.read(8)
+        if evbuf:
+            tyme, value, type, number = struct.unpack('IhBB', evbuf)
+            #print (str(struct.unpack('IhBB',evbuf)))
+            #Use for debugging
+            #if type & 0x80:
+                #print("(initial)",end=""),
 
+            if type & 0x01:
+                button = button_map[number]
+                if button:
+                    button_states[button] = value
+                    #Use "PRINT" for debugging - comment out to speed program execution
+                    if value:
+                        print("%s pressed" % (button))
+                    else:
+                        print("%s released" % (button))
+        i = i+1
+
+def motor_loop(arg1):
     # Main event loop
     while True:
-        start_time = time.time()
-        # Joystick code based on release by rdb under the Unlicense (unlicense.org)
-        # Based on information from:
-        # https://www.kernel.org/doc/Documentation/input/joystick-api.txt
+        global direction
 
-        evbuf = jsdev.read(8)
+        global intValrx
+        global intValx
+        global intValx2
+        global intValry
+        global intValy
+        global intValy2
+
+        start_time = time.time()
+
+        if direction == 1:
+            wantYaw = 0
+            while yawDeg - wantYaw >=20:
+                GPIO.output(BL1,GPIO.HIGH)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.LOW)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            while yawDeg - wantYaw <= -20:
+                GPIO.output(BL1,GPIO.LOW)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.HIGH)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            pwm.channels[BL1_PWM].duty_cycle = 0
+            pwm.channels[GR1_PWM].duty_cycle = 0
+        elif direction == 2:
+            wantYaw = 90
+            while yawDeg - wantYaw >=20:
+                GPIO.output(BL1,GPIO.HIGH)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.LOW)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            while yawDeg - wantYaw <= -20:
+                GPIO.output(BL1,GPIO.LOW)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.HIGH)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            pwm.channels[BL1_PWM].duty_cycle = 0
+            pwm.channels[GR1_PWM].duty_cycle = 0
+        elif direction == 3:
+            wantYaw = 180
+            while yawDeg - wantYaw >=20:
+                GPIO.output(BL1,GPIO.HIGH)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.LOW)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            while yawDeg - wantYaw <= -20:
+                GPIO.output(BL1,GPIO.LOW)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.HIGH)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            pwm.channels[BL1_PWM].duty_cycle = 0
+            pwm.channels[GR1_PWM].duty_cycle = 0
+        elif direction == 4:
+            wantYaw = -90
+            while yawDeg - wantYaw >=20:
+                GPIO.output(BL1,GPIO.HIGH)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.LOW)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            while yawDeg - wantYaw <= -20:
+                GPIO.output(BL1,GPIO.LOW)
+                pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
+                GPIO.output(GR1,GPIO.HIGH)
+                pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
+            pwm.channels[BL1_PWM].duty_cycle = 0
+            pwm.channels[GR1_PWM].duty_cycle = 0
+
+        #evbuf = jsdev.read(8)
         if evbuf:
             tyme, value, type, number = struct.unpack('IhBB', evbuf)
             #print (str(struct.unpack('IhBB',evbuf)))
@@ -366,19 +446,19 @@ try:
                         print("%s released" % (button))
 
                     if button == "y":
-                        flag = 1
-                    
+                        direction = 1
+
                     elif button == "b":
-                        flag = 2
+                        direction = 2
 
                     elif button == "a":
-                        flag = 3
+                        direction= 3
 
                     elif button == "x":
-                        flag = 4
+                        direction = 4
 
                     elif button == "RB":
-                        flag = 0
+                        direction = 0
 
                     else:
                         pass
@@ -416,7 +496,7 @@ try:
                     axis_states[axis] = fvalue
                     intValry = int(fvalue)*2+1
                 #front left trigger rev (vehicle descend)
-                
+
                 if axis=="rx":
                     fvalue = value
                     axis_states[axis] = fvalue
@@ -428,11 +508,11 @@ try:
                     axis_states[axis] = fvalue
                     intValy2 = int(fvalue)*2+1
                     print("%d" % (intValy2))
-                    
+
                 #There's a nice tutorial for single joysick control at http://home.kendra.com/mauser/Joystick.html
                 #if intValrx+intValry >= 0xFFFF:
                     #t = threading.Thread(target=sensor_read,args=(1,), daemon=True).start() #testing what putting threading in our for loop does
-                
+
                 if intValy2<-100:
                     #green motor
                     y2 = intValy2
@@ -460,12 +540,12 @@ try:
                 if intValx>100:
                     #x motor
                     x = intValx
-            
+
                 elif intValx<-100:
                     #x motor
                     x = intValx
-                
-                else: 
+
+                else:
                     #x motor
                     x = 0
 
@@ -476,7 +556,7 @@ try:
                 elif intValx2<-100:
                     #x motor
                     x2 = intValx2
-                
+
                 else:
                     #x motor
                     x2 = 0
@@ -505,39 +585,39 @@ try:
                     RightStickOpp = 0xFFFF
                 elif RightStickOpp < -0xFFFF:
                     RightStickOpp = 0xFFFF
-                    
+
                 #green2 motor left up/down
                 if y2 > 0:
                     GPIO.output(GR2,GPIO.LOW)
-                else: 
+                else:
                     GPIO.output(GR2,GPIO.HIGH)
                 pwm.channels[GR2_PWM].duty_cycle = abs(y2)
 
                 #blue motor left side
                 if LeftStickOpp > 0:
                     GPIO.output(BL1,GPIO.HIGH)
-                else: 
+                else:
                     GPIO.output(BL1,GPIO.LOW)
                 pwm.channels[BL1_PWM].duty_cycle = abs(LeftStickOpp)
 
                 #green1 motor right side
                 if LeftStick > 0:
                     GPIO.output(GR1,GPIO.HIGH)
-                else: 
+                else:
                     GPIO.output(GR1,GPIO.LOW)
                 pwm.channels[GR1_PWM].duty_cycle = abs(LeftStick)
 
                 #orange motor left side up/down
                 if RightStickOpp > 0:
                     GPIO.output(OR1,GPIO.HIGH)
-                else: 
+                else:
                     GPIO.output(OR1,GPIO.LOW)
                 pwm.channels[OR1_PWM].duty_cycle = abs(RightStickOpp)
 
                 #brown motor right side up/down
                 if RightStick > 0:
                     GPIO.output(BR1,GPIO.HIGH)
-                else: 
+                else:
                     GPIO.output(BR1,GPIO.LOW)
                 pwm.channels[BR1_PWM].duty_cycle = abs(RightStick)
 
@@ -553,13 +633,17 @@ try:
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
                 # pwm.channels[BR1_PWM].duty_cycle = abs(intValrx)
 
-            if flag == 1:
-                GPIO.output(16,GPIO.HIGH)
-            elif flag == 0:
-                GPIO.output(16,GPIO.LOW)
-        end_time = time.time()        
-        print (flag)
+        end_time = time.time()
+        print (direction)
         print("loop time:",end_time - start_time)
 
-except (KeyboardInterrupt,SystemExit):
-    GPIO.cleanup()
+def control_loop(arg1):
+    global evbuf
+    while True:
+        evbuf = jsdev.read(8)
+
+threading.Thread(target=motor_loop,args=(1,), daemon=True).start()
+threading.Thread(target=sensor_read,args=(1,), daemon=True).start()
+#threading.Thread(target=control_loop,args=(1,), daemon=True).start()
+while True:
+    evbuf = jsdev.read(8)
