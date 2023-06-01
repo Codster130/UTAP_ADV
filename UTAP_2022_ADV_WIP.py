@@ -60,6 +60,18 @@ oled = adafruit_ssd1306.SSD1306_I2C(128,64, i2c_oled,addr=0x3c,reset=[])
 i2c_bme = board.I2C()
 bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c_bme,0x76)
 
+class myThread(threading.Thread):
+    def __init__(self, threadID, name, counter, threadType):
+        self.threadID = threadID
+        self.name = name
+        self.counter = counter
+        self.threadType = threadType
+    def run(self):
+        print ("Starting " + self.name)
+        self.threadType(1)
+
+        
+
 def sensor_read(arg1):
     while True:
         global yy
@@ -372,12 +384,12 @@ def motor_loop(arg1):
 
         if direction == 1:
             wantYaw = 0
-            while yawDeg - wantYaw >=20:
+            if yawDeg - wantYaw >=20:
                 GPIO.output(BL1,GPIO.HIGH)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.LOW)
                 pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
-            while yawDeg - wantYaw <= -20:
+            elif yawDeg - wantYaw <= -20:
                 GPIO.output(BL1,GPIO.LOW)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.HIGH)
@@ -386,12 +398,12 @@ def motor_loop(arg1):
             pwm.channels[GR1_PWM].duty_cycle = 0
         elif direction == 2:
             wantYaw = 90
-            while yawDeg - wantYaw >=20:
+            if yawDeg - wantYaw >=20:
                 GPIO.output(BL1,GPIO.HIGH)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.LOW)
                 pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
-            while yawDeg - wantYaw <= -20:
+            elif yawDeg - wantYaw <= -20:
                 GPIO.output(BL1,GPIO.LOW)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.HIGH)
@@ -400,12 +412,12 @@ def motor_loop(arg1):
             pwm.channels[GR1_PWM].duty_cycle = 0
         elif direction == 3:
             wantYaw = 180
-            while yawDeg - wantYaw >=20:
+            if yawDeg - wantYaw >=20:
                 GPIO.output(BL1,GPIO.HIGH)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.LOW)
                 pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
-            while yawDeg - wantYaw <= -20:
+            elif yawDeg - wantYaw <= -20:
                 GPIO.output(BL1,GPIO.LOW)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.HIGH)
@@ -414,12 +426,12 @@ def motor_loop(arg1):
             pwm.channels[GR1_PWM].duty_cycle = 0
         elif direction == 4:
             wantYaw = -90
-            while yawDeg - wantYaw >=20:
+            if yawDeg - wantYaw >=20:
                 GPIO.output(BL1,GPIO.HIGH)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.LOW)
                 pwm.channels[GR1_PWM].duty_cycle = abs(0xF000)
-            while yawDeg - wantYaw <= -20:
+            elif yawDeg - wantYaw <= -20:
                 GPIO.output(BL1,GPIO.LOW)
                 pwm.channels[BL1_PWM].duty_cycle = abs(0xF000)
                 GPIO.output(GR1,GPIO.HIGH)
@@ -642,6 +654,8 @@ def control_loop(arg1):
     while True:
         evbuf = jsdev.read(8)
 
+#thread1 = myThread(1, "Sensor", 1, sensor_read(1))
+#thread2 = myThread(2, "Motor", 2, motor_loop(1))
 threading.Thread(target=motor_loop,args=(1,), daemon=True).start()
 threading.Thread(target=sensor_read,args=(1,), daemon=True).start()
 #threading.Thread(target=control_loop,args=(1,), daemon=True).start()
@@ -650,3 +664,4 @@ try:
         evbuf = jsdev.read(8)
 except (KeyboardInterrupt,SystemExit):
     GPIO.cleanup()
+    print(direction)
